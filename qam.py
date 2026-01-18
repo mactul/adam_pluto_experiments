@@ -1,19 +1,17 @@
 import math
 
-SQRT2_4 = math.sqrt(2) / 4
+QBSK_TABLE = [1+0j, 1j, -1j, -1 + 0j]
 
-QAM8_TABLE = [1+0j, SQRT2_4+SQRT2_4*1j, -SQRT2_4 + SQRT2_4 * 1j, 1j, SQRT2_4 - SQRT2_4 * 1j, -1j, -1 + 0j, -SQRT2_4 - SQRT2_4 * 1j]
+def symb_to_qpsk(symb: int) -> complex:
+    if symb < 0b00 or symb > 0b11:
+        raise ValueError("Symbols should be between 0b00 and 0b11")
+    return QBSK_TABLE[symb]
 
-def symb_to_qam8(symb: int) -> complex:
-    if symb < 0b000 or symb > 0b111:
-        raise ValueError("Symbole should be between 0b000 and 0b111")
-    return QAM8_TABLE[symb]
-
-def closest_symb(qam8: complex):
+def closest_symb(qpsk: complex):
     index = 0
-    min_diff = abs(qam8 - QAM8_TABLE[0])
-    for i in range(1, len(QAM8_TABLE)):
-        diff = abs(qam8 - QAM8_TABLE[i])
+    min_diff = abs(qpsk - QBSK_TABLE[0])
+    for i in range(1, len(QBSK_TABLE)):
+        diff = abs(qpsk - QBSK_TABLE[i])
         if diff < min_diff:
             min_diff = diff
             index = i

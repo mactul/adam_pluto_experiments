@@ -2,12 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import adi
 from qam import closest_symb
+from messages import symbols_to_messages
 
 oversampling = 50
 sample_rate = 5e6 # Hz
-center_freq = 1e9 # Hz
+center_freq = 2.4e9 # Hz
 sampling_margin = int(oversampling/5)
-num_samps = 10000
+num_samps = 600000
 
 sdr = adi.Pluto('ip:192.168.2.1')
 sdr.gain_control_mode_chan0 = 'manual'
@@ -20,7 +21,7 @@ sdr.rx_buffer_size = num_samps
 
 samples = sdr.rx()
 
-noise_floor = 800
+noise_floor = 1500
 
 i = 0
 
@@ -28,6 +29,7 @@ i = 0
 while i < len(samples) - 2 * oversampling and abs(samples[i]) > noise_floor:
     i += 1
 
+symbols = []
 # We iterate over all samples, minus the ones at the end that will result in an incomplete message.
 while i < len(samples) - 2 * oversampling:
     if abs(samples[i]) > noise_floor:
@@ -46,7 +48,7 @@ while i < len(samples) - 2 * oversampling:
             # It was just a quirck, not a message following our protocol.
             continue
 
-        print("amplitude:", ampl, ", angle:", angle)
+        # print("amplitude:", ampl, ", angle:", angle)
 
         # We then pick the real data and correct it the same way. Hopefully, the amplitude and the phase wouldn't shifted since the ref was calculated.
         data = np.mean(samples[i + sampling_margin: i + oversampling - sampling_margin])
@@ -60,10 +62,11 @@ while i < len(samples) - 2 * oversampling:
 
         data /= ampl
 
-        print(bin(closest_symb(data)))
+        symbols.append(closest_symb(data))
 
     i += 1
 
+print(symbols_to_messages(symbols))
 
 plt.plot(np.abs(samples))
 
