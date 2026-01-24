@@ -8,6 +8,7 @@ def symb_to_qpsk(symb: int) -> complex:
     return QBSK_TABLE[symb]
 
 def closest_symb(qpsk: complex):
+    qpsk = qpsk / abs(qpsk)
     index = 0
     min_diff = abs(qpsk - QBSK_TABLE[0])
     for i in range(1, len(QBSK_TABLE)):
