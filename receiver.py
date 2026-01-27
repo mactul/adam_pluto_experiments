@@ -2,10 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import adi
 from qam import closest_symb
-from messages import symbols_to_messages
 
 oversampling = 25
-byte_per_control = 15
+byte_per_control = 2
 sample_rate = 5e6 # Hz
 center_freq = 2.4e9 # Hz
 sampling_margin = int(oversampling/5)
@@ -36,31 +35,42 @@ while i < len(samples):
     if abs(samples[i]) > noise_floor:
         # We just went above the noise, it's a new message
         msg_bytes = []
-        while i < len(samples) and abs(samples[i] > noise_floor):
-
-            # We pick the mean signal around here, it should be 1 + 0j, we can use that to calculate the amplitude and phase shift.
+        estimated_angle = None
+        while i < len(samples) and len(msg_bytes) < 20:
+            a = i
+            # We pick the mean signal around here, it should be 0 + 1j, we can use that to calculate the phase shift.
             ref = np.mean(samples[i + sampling_margin: i + oversampling - sampling_margin])
 
-            # We calculate how much the amplitude and phase must be corrected.
-            ampl = abs(ref)
-            angle = np.angle(ref * (1 + 0j).conjugate())
-
-            i += 3 * oversampling // 4
-            while closest_symb(samples[i] * np.exp(-1j * angle) / ampl) != closest_symb(-1 + 0j):
-                i += 1
-
             i += oversampling
+            if estimated_angle is not None and closest_symb(ref * np.exp(-1j * estimated_angle) != closest_symb(1j)):
+                # The phase shifted too much, don't trust this ref.
+                i += oversampling
+                angle = estimated_angle
+            else:
+                # We calculate how much the phase must be corrected.
+                angle = np.angle(ref * (0 + 1j).conjugate())
 
-            if ampl < noise_floor:
-                # It was just a quirck, not a message following our protocol.
-                print("quirck 2")
-                continue
+                # We resynchronize the time by searching the moment we go from 1j to -1j
+                j = i - oversampling // 4
+                while j < i + oversampling // 4 and np.angle(samples[j] * np.exp(-1j * angle)) > 0:
+                    j += 1
+                if j < i + oversampling // 4 and closest_symb(np.mean(samples[j + sampling_margin: j + oversampling - sampling_margin]) * np.exp(-1j * angle) == closest_symb(-1j)):
+                    # The time synchronization is good
+                    i = j + oversampling
+                else:
+                    # The time synchronization is corrupted, use latest synchro
+                    i += oversampling
 
+            estimated_angle = angle
+
+            # if ampl < noise_floor:
+            #     # It was just a quirck, not a message following our protocol.
+            #     print("quirck 2")
+            #     continue
+            #
 
             # print("amplitude:", ampl, ", angle:", angle)
             
-            bytes_to_add = []
-            quirck = False
             for j in range(byte_per_control):
                 byte = 0
                 for k in range(4):
@@ -70,28 +80,18 @@ while i < len(samples):
 
                     i += oversampling
 
-                    if abs(data) < noise_floor:
-                        # It was just a quirck, not a message following our protocol.
-                        quirck = True
-                        print("quirck 1")
-                        break
-                    data /= ampl
 
                     byte <<= 2
                     byte |= closest_symb(data)
 
-                bytes_to_add.append(byte)
-
-            if not quirck:
-                msg_bytes.extend(bytes_to_add)
+                msg_bytes.append(byte)
 
             i += 1
 
-        if len(msg_bytes) > 0:
-            print(bytes(msg_bytes))
+        print(bytes(msg_bytes))
 
     i += 1
 
 
-plt.plot(np.angle(samples))
+plt.plot(np.real(samples))
 plt.show()
