@@ -15,7 +15,6 @@ sdr.gain_control_mode_chan0 = 'manual'
 sdr.rx_hardwaregain_chan0 = 70.0 # dB
 print(int(center_freq))
 sdr.rx_lo = int(center_freq)
-sdr.lo_offset = 600
 sdr.sample_rate = int(sample_rate)
 sdr.rx_rf_bandwidth = int(sample_rate)
 sdr.rx_buffer_size = num_samps
@@ -42,7 +41,7 @@ while i < len(samples):
             ref = np.mean(samples[i + sampling_margin: i + oversampling - sampling_margin])
 
             i += oversampling
-            if estimated_angle is not None and closest_symb(ref * np.exp(-1j * estimated_angle) != closest_symb(1j)):
+            if estimated_angle is not None and closest_symb(ref * np.exp(-1j * estimated_angle)) != closest_symb(1j):
                 # The phase shifted too much, don't trust this ref.
                 i += oversampling
                 angle = estimated_angle
@@ -54,7 +53,7 @@ while i < len(samples):
                 j = i - oversampling // 4
                 while j < i + oversampling // 4 and np.angle(samples[j] * np.exp(-1j * angle)) > 0:
                     j += 1
-                if j < i + oversampling // 4 and closest_symb(np.mean(samples[j + sampling_margin: j + oversampling - sampling_margin]) * np.exp(-1j * angle) == closest_symb(-1j)):
+                if j < i + oversampling // 4 and closest_symb(np.mean(samples[j + sampling_margin: j + oversampling - sampling_margin]) * np.exp(-1j * angle)) == closest_symb(-1j):
                     # The time synchronization is good
                     i = j + oversampling
                 else:
@@ -70,7 +69,7 @@ while i < len(samples):
             #
 
             # print("amplitude:", ampl, ", angle:", angle)
-            
+
             for j in range(byte_per_control):
                 byte = 0
                 for k in range(4):
