@@ -6,7 +6,7 @@ from qam import closest_symb
 oversampling = 25
 byte_per_control = 2
 sample_rate = 5e6 # Hz
-center_freq = 2.4e9 # Hz
+center_freq = 2.4835e9 # Hz
 sampling_margin = int(oversampling/5)
 num_samps = 200000
 
@@ -92,5 +92,5 @@ while i < len(samples):
     i += 1
 
 
-plt.plot(np.real(samples))
+plt.plot(np.angle(samples))
 plt.show()
