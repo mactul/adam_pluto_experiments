@@ -1,2 +1,4 @@
 pyadi-iio
 pylibiio
+numpy
+matplotlib
